@@ -593,15 +593,17 @@ let chartRubro = null;
 
 function renderRubroChart() {
   const year = parseInt(document.getElementById('rubro-year').value);
-  const filtered = RAW.filter(d => d.año === year && Object.keys(d.rubros||{}).length > 0)
-    .sort((a,b) => a.mes-b.mes);
-  
-  const rubros = [...new Set(filtered.flatMap(d => Object.keys(d.rubros||{})))].sort();
-  const labels = filtered.map(d => MESES_CORTO[d.mes]);
-  
+  const filtered = DET.filter(d => d.a === year);
+
+  const meses = [...new Set(filtered.map(d => d.m))].sort((a, b) => a - b);
+  const rubros = [...new Set(filtered.map(d => d.r))].sort();
+  const labels = meses.map(m => MESES_CORTO[m]);
+
   const datasets = rubros.map((r, i) => ({
     label: r,
-    data: filtered.map(d => d.rubros[r] || 0),
+    data: meses.map(m =>
+      filtered.filter(d => d.m === m && d.r === r).reduce((s, d) => s + (d.u || 0), 0)
+    ),
     backgroundColor: colorAlpha(PALETTE[i % PALETTE.length], 0.8),
     borderColor: PALETTE[i % PALETTE.length],
     borderWidth: 1
