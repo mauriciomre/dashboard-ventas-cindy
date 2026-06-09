@@ -79,6 +79,55 @@ if (empty($_SESSION['logged_in'])) {
     </div>
   </div>
 
+  <!-- SINCRONIZACIÓN DIRECTA CON ERP -->
+  <div class="card">
+    <h1>Sincronizar con Manager Max</h1>
+    <p class="subtitle">Importa los datos directamente del ERP sin necesidad de un archivo Excel. El rango se actualiza en la base de datos al instante.</p>
+
+    <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <label>Empresa</label>
+        <select id="erp-empresa" style="width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;font-size:14px;outline:none;background:#fff">
+          <option value="3">Producción (3)</option>
+          <option value="4" selected>Test (4)</option>
+        </select>
+      </div>
+      <div style="flex:2;min-width:180px">
+        <label>Rango</label>
+        <select id="erp-rango" style="width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;font-size:14px;outline:none;background:#fff" onchange="toggleFechasPersonalizadas()">
+          <option value="2m" selected>Mes anterior + actual</option>
+          <option value="3m">Últimos 3 meses</option>
+          <option value="6m">Últimos 6 meses</option>
+          <option value="12m">Últimos 12 meses</option>
+          <option value="custom">Personalizado…</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="fechas-custom" style="display:none;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <label>Desde (YYYY-MM)</label>
+        <input type="month" id="erp-desde" style="width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;font-size:14px;outline:none">
+      </div>
+      <div style="flex:1;min-width:140px">
+        <label>Hasta (YYYY-MM)</label>
+        <input type="month" id="erp-hasta" style="width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;font-size:14px;outline:none">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:6px">
+      <button id="btnSync" onclick="sincronizarERP(false)" style="flex:1">Sincronizar ahora</button>
+      <button id="btnDry" onclick="sincronizarERP(true)"
+        style="flex:0 0 auto;width:auto;padding:12px 18px;background:#F1F5F9;color:#334155;font-weight:600;border:1px solid #E2E8F0">
+        Prueba (sin guardar)
+      </button>
+    </div>
+
+    <div class="status" id="erp-status"></div>
+
+    <div id="erp-log" style="display:none;margin-top:14px;background:#0F172A;border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:#94A3B8;max-height:200px;overflow-y:auto"></div>
+  </div>
+
   <!-- HISTORIAL DE IMPORTACIONES -->
   <div class="card">
     <h2>Historial de importaciones</h2>
@@ -259,6 +308,90 @@ async function cargarHistorial() {
 }
 
 cargarHistorial();
+
+// ─── Sincronización ERP ───────────────────────────────────────────────────────
+function toggleFechasPersonalizadas() {
+  const v = document.getElementById('erp-rango').value;
+  document.getElementById('fechas-custom').style.display = v === 'custom' ? 'flex' : 'none';
+}
+
+function calcularRango(rango) {
+  const ahora = new Date();
+  const pad   = n => String(n).padStart(2, '0');
+  const fmt   = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+
+  const hasta = fmt(ahora);
+
+  if (rango === 'custom') {
+    const desde = document.getElementById('erp-desde').value;
+    const h     = document.getElementById('erp-hasta').value || hasta;
+    if (!desde) { alert('Indicá una fecha de inicio.'); return null; }
+    return { desde, hasta: h };
+  }
+
+  const mesesAtras = parseInt(rango) || 2;
+  const desdeDate  = new Date(ahora.getFullYear(), ahora.getMonth() - (mesesAtras - 1), 1);
+  return { desde: fmt(desdeDate), hasta };
+}
+
+async function sincronizarERP(dryRun = false) {
+  const status  = document.getElementById('erp-status');
+  const logDiv  = document.getElementById('erp-log');
+  const btnSync = document.getElementById('btnSync');
+  const btnDry  = document.getElementById('btnDry');
+
+  const rango = calcularRango(document.getElementById('erp-rango').value);
+  if (!rango) return;
+
+  const empresa = document.getElementById('erp-empresa').value;
+
+  btnSync.disabled = true;
+  btnDry.disabled  = true;
+  status.className = 'status info';
+  status.textContent = dryRun
+    ? `Probando conexión (${rango.desde} → ${rango.hasta})…`
+    : `Sincronizando ${rango.desde} → ${rango.hasta}…`;
+  logDiv.style.display = 'none';
+  logDiv.innerHTML = '';
+
+  try {
+    const params = new URLSearchParams({
+      desde:   rango.desde,
+      hasta:   rango.hasta,
+      empresa: empresa,
+      ...(dryRun ? { dry_run: '1' } : {}),
+    });
+
+    const res = await fetch(`../api/erp_sync.php?${params}`);
+    const data = await res.json();
+
+    // Mostrar log
+    if (data.log && data.log.length) {
+      logDiv.style.display = 'block';
+      logDiv.innerHTML = data.log.map(l => `<div>${escHtml(l)}</div>`).join('');
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    if (data.ok) {
+      status.className = 'status ok';
+      status.textContent = (dryRun ? '[PRUEBA] ' : '✓ ') + data.message;
+      if (!dryRun) cargarHistorial();
+    } else {
+      status.className = 'status err';
+      status.textContent = 'Error: ' + (data.error || data.message || 'desconocido');
+    }
+  } catch(e) {
+    status.className = 'status err';
+    status.textContent = 'Error de red: ' + e.message;
+  }
+
+  btnSync.disabled = false;
+  btnDry.disabled  = false;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 </script>
 </body>
 </html>
