@@ -1,0 +1,6 @@
+DirectoryIndex index.php
+
+# Bloquear acceso directo al HTML del dashboard
+<Files "dashboard.html">
+    Require all denied
+</Files>
