@@ -1,10 +1,6 @@
 <?php
 // Endpoint: detalle ERP por año/mes/local/rubro (reemplaza el array DET)
 // GET /api/detalle.php
-// GET /api/detalle.php?anio=2026
-// GET /api/detalle.php?anio=2026&mes=6
-// GET /api/detalle.php?anio=2026&local=Peatonal
-// GET /api/detalle.php?anio=2026&rubro=Bijouterie
 
 require_once __DIR__ . '/config.php';
 
@@ -15,40 +11,40 @@ try {
     $params = [];
 
     if (!empty($_GET['anio'])) {
-        $where[] = 'a = :anio';
+        $where[] = 'anio = :anio';
         $params['anio'] = (int)$_GET['anio'];
     }
     if (!empty($_GET['mes'])) {
-        $where[] = 'm = :mes';
+        $where[] = 'mes = :mes';
         $params['mes'] = (int)$_GET['mes'];
     }
     if (!empty($_GET['local'])) {
-        $where[] = 'l = :local';
+        $where[] = 'local = :local';
         $params['local'] = $_GET['local'];
     }
     if (!empty($_GET['rubro'])) {
-        $where[] = 'r = :rubro';
+        $where[] = 'rubro = :rubro';
         $params['rubro'] = $_GET['rubro'];
     }
 
-    $sql = 'SELECT a, m, l, r, v, u FROM detalle_ventas';
+    $sql = 'SELECT anio, mes, local, rubro, valor, unidades FROM detalle_ventas';
     if ($where) {
         $sql .= ' WHERE ' . implode(' AND ', $where);
     }
-    $sql .= ' ORDER BY a, m, l, r';
+    $sql .= ' ORDER BY anio, mes, local, rubro';
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $rows = $stmt->fetchAll();
 
-    // Formato compatible con el array DET del dashboard
+    // Formato compatible con el array DET del dashboard {a, m, l, r, v, u}
     $data = array_map(fn($r) => [
-        'a' => (int)$r['a'],
-        'm' => (int)$r['m'],
-        'l' => $r['l'],
-        'r' => $r['r'],
-        'v' => (float)$r['v'],
-        'u' => (int)$r['u'],
+        'a' => (int)$r['anio'],
+        'm' => (int)$r['mes'],
+        'l' => $r['local'],
+        'r' => $r['rubro'],
+        'v' => (float)$r['valor'],
+        'u' => (int)$r['unidades'],
     ], $rows);
 
     echo json_encode(['ok' => true, 'data' => $data]);
