@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Importar datos — Cindy Mayorista</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #F8FAFC; color: #1E293B; font-size: 14px; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; }
+  .card { background: #fff; border-radius: 16px; padding: 40px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08); width: 100%; max-width: 480px; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #64748B; font-size: 13px; margin-bottom: 28px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #64748B;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  input[type="password"], input[type="file"] {
+    width: 100%; border: 1px solid #E2E8F0; border-radius: 8px;
+    padding: 10px 14px; font-size: 14px; margin-bottom: 18px; outline: none; }
+  input[type="password"]:focus, input[type="file"]:focus { border-color: #6366F1; }
+  button { width: 100%; background: #6366F1; color: #fff; border: none;
+    border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s; }
+  button:hover { background: #4F46E5; }
+  button:disabled { background: #94A3B8; cursor: not-allowed; }
+  .status { margin-top: 18px; padding: 14px; border-radius: 8px; font-size: 13px;
+    display: none; }
+  .status.ok { background: #ECFDF5; color: #065F46; border: 1px solid #6EE7B7; display: block; }
+  .status.err { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; display: block; }
+  .status.info { background: #EEF2FF; color: #3730A3; border: 1px solid #C7D2FE; display: block; }
+  .preview { margin-top: 18px; font-size: 12px; color: #64748B;
+    background: #F8FAFC; border-radius: 8px; padding: 12px; display: none; }
+  .preview table { width: 100%; border-collapse: collapse; }
+  .preview th, .preview td { text-align: left; padding: 4px 8px;
+    border-bottom: 1px solid #E2E8F0; }
+  .preview th { font-weight: 600; color: #1E293B; }
+  a.back { display: inline-block; margin-bottom: 20px; color: #6366F1;
+    font-size: 13px; text-decoration: none; }
+  a.back:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="card">
+  <a class="back" href="../">← Volver al dashboard</a>
+  <h1>Importar datos del ERP</h1>
+  <p class="subtitle">Lee la hoja <strong>ZONA PEGAR ERP</strong> del Excel y actualiza la base de datos.</p>
+
+  <div id="login-section">
+    <label>Contraseña de acceso</label>
+    <input type="password" id="pwd" placeholder="Contraseña" onkeydown="if(event.key==='Enter')verificarPwd()">
+    <button onclick="verificarPwd()">Ingresar</button>
+    <div class="status err" id="pwd-error">Contraseña incorrecta.</div>
+  </div>
+
+  <div id="import-section" style="display:none">
+    <label>Archivo Excel (CINDY_MAESTRO.xlsx)</label>
+    <input type="file" id="xlFile" accept=".xlsx,.xls">
+    <button id="btnImport" onclick="importar()" disabled>Seleccioná un archivo primero</button>
+    <div class="status" id="status"></div>
+    <div class="preview" id="preview">
+      <strong>Vista previa — primeros registros:</strong>
+      <div id="preview-table"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================================
+// CONFIGURACIÓN
+// =====================================================
+const API_URL = '../api/importar.php';
+
+const LOCAL_MAP = {
+  '105': 'Peatonal', '5555': 'Peatonal',
+  '107': 'Deposito', '113': 'Deposito', '3333': 'Deposito',
+  '109': 'R. Indarte', '9999': 'R. Indarte',
+  '200': 'Travel Blue'
+};
+
+// =====================================================
+// LOGIN
+// =====================================================
+function verificarPwd() {
+  const pwd = document.getElementById('pwd').value;
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'auth', password: pwd })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      window._authToken = data.token;
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('import-section').style.display = 'block';
+    } else {
+      document.getElementById('pwd-error').style.display = 'block';
+    }
+  })
+  .catch(() => {
+    document.getElementById('pwd-error').style.display = 'block';
+  });
+}
+
+// =====================================================
+// HABILITAR BOTÓN AL SELECCIONAR ARCHIVO
+// =====================================================
+document.getElementById('xlFile').addEventListener('change', function() {
+  const btn = document.getElementById('btnImport');
+  if (this.files.length > 0) {
+    btn.disabled = false;
+    btn.textContent = 'Importar datos';
+  }
+});
+
+// =====================================================
+// PARSEAR ZONA PEGAR ERP
+// =====================================================
+function parsearZonaPegar(wb) {
+  const ws = wb.Sheets['ZONA PEGAR ERP'];
+  if (!ws) throw new Error('No se encontró la hoja "ZONA PEGAR ERP" en el archivo.');
+
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+  // Buscar fila de encabezado (donde col 0 = 'año' o 'Año')
+  let hIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i][0] && String(rows[i][0]).toLowerCase() === 'año') { hIdx = i; break; }
+  }
+  if (hIdx < 0) throw new Error('No se encontró el encabezado en ZONA PEGAR ERP. La primera columna debe decir "Año".');
+
+  // Agrupar por (año, mes, local, rubro)
+  const zonaMap = {};
+  for (let i = hIdx + 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0]) continue;
+
+    const a = parseInt(r[0]);
+    const m = parseInt(r[1]);
+    const lRaw = r[2] ? String(r[2]).trim() : '';
+    const l = LOCAL_MAP[lRaw] || lRaw;
+    const rubro = r[3] ? String(r[3]).trim() : '';
+
+    // PrecioUnitarioImpuesto (col 5) × Cantidad (col 6) = total con IVA
+    const precio = r[5] ? parseFloat(r[5]) : 0;
+    const cant   = r[6] ? parseFloat(r[6]) : 0;
+    if (!a || !m || !l || !rubro || cant === 0) continue;
+
+    const key = `${a}-${m}-${l}-${rubro}`;
+    if (!zonaMap[key]) zonaMap[key] = { a, m, l, r: rubro, v: 0, u: 0 };
+    zonaMap[key].v += precio * cant;
+    zonaMap[key].u += cant;
+  }
+
+  const registros = Object.values(zonaMap);
+  if (registros.length === 0) throw new Error('No se encontraron datos en ZONA PEGAR ERP. Verificá que haya datos debajo del encabezado.');
+  return registros;
+}
+
+// =====================================================
+// IMPORTAR
+// =====================================================
+async function importar() {
+  const file = document.getElementById('xlFile').files[0];
+  const status = document.getElementById('status');
+  const btn = document.getElementById('btnImport');
+
+  status.className = 'status info';
+  status.textContent = 'Leyendo archivo...';
+
+  btn.disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const registros = parsearZonaPegar(wb);
+
+      // Vista previa
+      mostrarPreview(registros.slice(0, 5));
+
+      status.textContent = `Enviando ${registros.length} registros a la base de datos...`;
+
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'import', token: window._authToken, data: registros })
+      });
+      const result = await res.json();
+
+      if (result.ok) {
+        status.className = 'status ok';
+        status.textContent = `✓ Importación exitosa — ${result.insertados} registros insertados, ${result.meses_actualizados} mes(es) actualizado(s).`;
+      } else {
+        throw new Error(result.error || 'Error desconocido');
+      }
+    } catch(err) {
+      status.className = 'status err';
+      status.textContent = 'Error: ' + err.message;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Importar datos';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// =====================================================
+// VISTA PREVIA
+// =====================================================
+function mostrarPreview(registros) {
+  const preview = document.getElementById('preview');
+  const container = document.getElementById('preview-table');
+  preview.style.display = 'block';
+  container.innerHTML = `
+    <table>
+      <tr><th>Año</th><th>Mes</th><th>Local</th><th>Rubro</th><th>Valor $</th><th>Unidades</th></tr>
+      ${registros.map(r => `
+        <tr>
+          <td>${r.a}</td><td>${r.m}</td><td>${r.l}</td><td>${r.r}</td>
+          <td>$${r.v.toFixed(2)}</td><td>${r.u}</td>
+        </tr>`).join('')}
+    </table>
+    <p style="margin-top:6px;color:#94A3B8">Mostrando los primeros 5 de los registros parseados.</p>
+  `;
+}
+</script>
+</body>
+</html>
