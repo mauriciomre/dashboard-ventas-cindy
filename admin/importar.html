@@ -47,14 +47,7 @@
   <h1>Importar datos del ERP</h1>
   <p class="subtitle">Lee la hoja <strong>ZONA PEGAR ERP</strong> del Excel y actualiza la base de datos.</p>
 
-  <div id="login-section">
-    <label>Contraseña de acceso</label>
-    <input type="password" id="pwd" placeholder="Contraseña" onkeydown="if(event.key==='Enter')verificarPwd()">
-    <button onclick="verificarPwd()">Ingresar</button>
-    <div class="status err" id="pwd-error">Contraseña incorrecta.</div>
-  </div>
-
-  <div id="import-section" style="display:none">
+  <div id="import-section">
     <label>Archivo Excel (CINDY_MAESTRO.xlsx)</label>
     <input type="file" id="xlFile" accept=".xlsx,.xls">
     <button id="btnImport" onclick="importar()" disabled>Seleccioná un archivo primero</button>
@@ -78,31 +71,6 @@ const LOCAL_MAP = {
   '109': 'R. Indarte', '9999': 'R. Indarte',
   '200': 'Travel Blue'
 };
-
-// =====================================================
-// LOGIN
-// =====================================================
-function verificarPwd() {
-  const pwd = document.getElementById('pwd').value;
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'auth', password: pwd })
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.ok) {
-      window._authToken = data.token;
-      document.getElementById('login-section').style.display = 'none';
-      document.getElementById('import-section').style.display = 'block';
-    } else {
-      document.getElementById('pwd-error').style.display = 'block';
-    }
-  })
-  .catch(() => {
-    document.getElementById('pwd-error').style.display = 'block';
-  });
-}
 
 // =====================================================
 // HABILITAR BOTÓN AL SELECCIONAR ARCHIVO
@@ -186,7 +154,7 @@ async function importar() {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'import', token: window._authToken, data: registros })
+        body: JSON.stringify({ action: 'import', data: registros })
       });
       const result = await res.json();
 
