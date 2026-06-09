@@ -169,80 +169,83 @@ let currentVista = 'mensual';
 let currentDesde, currentHasta, currentComparar;
 
 function initControls() {
-  const years = getUniqueYears();
-  const desdeEl = document.getElementById('ctrl-desde');
-  const hastaEl = document.getElementById('ctrl-hasta');
-  const compEl = document.getElementById('ctrl-comparar');
-  const evoCmpEl = document.getElementById('evo-comparar');
-  
-  years.forEach(y => {
-    desdeEl.innerHTML += `<option value="${y}">${y}</option>`;
-    hastaEl.innerHTML += `<option value="${y}">${y}</option>`;
-    compEl.innerHTML += `<option value="${y}">${y}</option>`;
-    evoCmpEl.innerHTML += `<option value="${y}">${y}</option>`;
-  });
-  hastaEl.value = years[years.length-1];
-  desdeEl.value = Math.max(years[0], years[years.length-1]-4);
-  compEl.value = years[years.length-2] || years[0];
-  evoCmpEl.innerHTML = '<option value="">Sin comparar</option>' + evoCmpEl.innerHTML;
-  
-  currentDesde = parseInt(desdeEl.value);
-  currentHasta = parseInt(hastaEl.value);
+  const years      = getUniqueYears();
+  const lastYear   = years[years.length - 1];
+  const secondLast = years.length >= 2 ? years[years.length - 2] : years[0];
+
+  // Build option HTML strings once — avoids repeated layout thrashing from innerHTML +=
+  const yearOpts    = years.map(y => `<option value="${y}">${y}</option>`).join('');
+  const yearOptsRev = [...years].reverse().map(y => `<option value="${y}">${y}</option>`).join('');
+
+  const desdeEl   = document.getElementById('ctrl-desde');
+  const hastaEl   = document.getElementById('ctrl-hasta');
+  const compEl    = document.getElementById('ctrl-comparar');
+  const evoCmpEl  = document.getElementById('evo-comparar');
+
+  desdeEl.innerHTML  = yearOpts;
+  hastaEl.innerHTML  = yearOpts;
+  compEl.innerHTML   = yearOpts;
+  evoCmpEl.innerHTML = '<option value="">Sin comparar</option>' + yearOpts;
+
+  hastaEl.value  = lastYear;
+  desdeEl.value  = Math.max(years[0], lastYear - 4);
+  compEl.value   = secondLast;
+  evoCmpEl.value = '';
+
+  currentDesde    = parseInt(desdeEl.value);
+  currentHasta    = parseInt(hastaEl.value);
   currentComparar = parseInt(compEl.value);
-  
-  // Also fill local-year, rubro-year, uds selectors, erp-año, tbl-año
+
+  // Charts & tables year selectors
   const localYearEl = document.getElementById('local-year');
   const rubroYearEl = document.getElementById('rubro-year');
-  const udsAEl = document.getElementById('uds-año-a');
-  const udsBEl = document.getElementById('uds-año-b');
-  const erpAnoEl = document.getElementById('erp-año');
-  const tblAnoEl = document.getElementById('tbl-año');
-  
-  years.forEach(y => {
-    localYearEl.innerHTML += `<option value="${y}">${y}</option>`;
-    rubroYearEl.innerHTML += `<option value="${y}">${y}</option>`;
-    udsAEl.innerHTML += `<option value="${y}">${y}</option>`;
-    udsBEl.innerHTML += `<option value="${y}">${y}</option>`;
-    erpAnoEl.innerHTML += `<option value="${y}">${y}</option>`;
-    tblAnoEl.innerHTML += `<option value="${y}">${y}</option>`;
+  const udsAEl      = document.getElementById('uds-año-a');
+  const udsBEl      = document.getElementById('uds-año-b');
+  const erpAnoEl    = document.getElementById('erp-año');
+  const tblAnoEl    = document.getElementById('tbl-año');
+
+  localYearEl.innerHTML = yearOpts;
+  rubroYearEl.innerHTML = yearOpts;
+  udsAEl.innerHTML      = yearOpts;
+  udsBEl.innerHTML      = yearOpts;
+  erpAnoEl.innerHTML    = yearOpts;
+  tblAnoEl.innerHTML    = yearOpts;
+
+  localYearEl.value = lastYear;
+  rubroYearEl.value = lastYear;   // synced with localYearEl by default
+  udsAEl.value      = lastYear;
+  udsBEl.value      = secondLast;
+  erpAnoEl.value    = lastYear;
+  tblAnoEl.value    = lastYear;
+
+  // Sync local-year ↔ rubro-year bidirectionally (task #18)
+  localYearEl.addEventListener('change', () => {
+    rubroYearEl.value = localYearEl.value;
+    renderLocalChart();
+    renderRubroChart();
   });
-  
-  localYearEl.value = years[years.length-1];
-  rubroYearEl.value = years[years.length-1];
-  udsAEl.value = years[years.length-1];
-  udsBEl.value = years.length >= 2 ? years[years.length-2] : years[0];
-  erpAnoEl.value = years[years.length-1];
-  tblAnoEl.value = years[years.length-1];
-  
-  // Fill ERP local filter
-  const erpLocalEl = document.getElementById('erp-local');
-  getUniqueLocales().forEach(l => {
-    erpLocalEl.innerHTML += `<option value="${l}">${l}</option>`;
+  rubroYearEl.addEventListener('change', () => {
+    localYearEl.value = rubroYearEl.value;
+    renderLocalChart();
+    renderRubroChart();
   });
 
-  // Fill ERP rubro filter
-  const erpRubroEl = document.getElementById('erp-rubro');
-  const uniqueRubros = [...new Set(DET.map(d=>d.r))].sort();
-  uniqueRubros.forEach(r => {
-    erpRubroEl.innerHTML += `<option value="${r}">${r}</option>`;
-  });
+  // Lists built once
+  const locales     = getUniqueLocales();
+  const uniqueRubros = [...new Set(DET.map(d => d.r))].sort();
+  const rawYears    = [...new Set(RAW.map(d => d.año))].sort((a, b) => b - a);
 
-  // Fill tabla evo comparar & artículos selects
+  const localOpts = locales.map(l => `<option value="${l}">${l}</option>`).join('');
+  const rubroOpts = uniqueRubros.map(r => `<option value="${r}">${r}</option>`).join('');
+
+  document.getElementById('erp-local').innerHTML   = '<option value="">Todos</option>' + localOpts;
+  document.getElementById('erp-rubro').innerHTML   = '<option value="">Todos</option>' + rubroOpts;
+  document.getElementById('uds-local-f').innerHTML = '<option value="">Todos</option>' + localOpts;
+
   const tblEvoComp = document.getElementById('tbl-evo-comp');
-  const tblEvoArt = document.getElementById('tbl-evo-articulos');
-  const rawYears = [...new Set(RAW.map(d=>d.año))].sort((a,b)=>b-a);
-  rawYears.forEach(y => {
-    tblEvoComp.innerHTML += `<option value="${y}">${y}</option>`;
-  });
-  uniqueRubros.forEach(r => {
-    tblEvoArt.innerHTML += `<option value="${r}">${r}</option>`;
-  });
-
-  // Fill UDS local filter
-  const udsLocalEl = document.getElementById('uds-local-f');
-  getUniqueLocales().forEach(l => {
-    udsLocalEl.innerHTML += `<option value="${l}">${l}</option>`;
-  });
+  const tblEvoArt  = document.getElementById('tbl-evo-articulos');
+  tblEvoComp.innerHTML = rawYears.map(y => `<option value="${y}">${y}</option>`).join('');
+  tblEvoArt.innerHTML  = rubroOpts;
 }
 
 function setVista(btn) {
@@ -1362,4 +1365,50 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (overlay) overlay.style.display = 'none';
   }, 50);
 });
+
+// =====================================================
+// EXPORTAR TABLA ACTIVA A EXCEL
+// =====================================================
+function exportarTablaExcel() {
+  // Detectar qué panel está activo en sec-tabla
+  const panels = ['panel-tbl-local', 'panel-tbl-rubro', 'panel-tbl-yoy'];
+  let activeId = panels[0];
+  for (const id of panels) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('active')) { activeId = id; break; }
+  }
+
+  const container = document.getElementById(activeId);
+  const table = container ? container.querySelector('table') : null;
+  if (!table) { alert('No hay datos para exportar.'); return; }
+
+  // Construir array de arrays para SheetJS
+  const rows = [];
+  table.querySelectorAll('tr').forEach(tr => {
+    const row = [];
+    tr.querySelectorAll('th, td').forEach(cell => {
+      // Limpiar texto: quitar spans internos, badges, etc.
+      row.push(cell.innerText.trim());
+    });
+    rows.push(row);
+  });
+
+  const año = document.getElementById('tbl-año').value;
+  const mesEl = document.getElementById('tbl-mes');
+  const mes = mesEl.options[mesEl.selectedIndex].text;
+  const tab = activeId.replace('panel-tbl-', '');
+  const nombreArchivo = `ventas_${tab}_${año}_${mes === 'Todo el año' ? 'anual' : mes}.xlsx`;
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Ancho de columnas automático
+  const colWidths = rows[0] ? rows[0].map((_, ci) => ({
+    wch: Math.max(...rows.map(r => (r[ci] || '').toString().length), 8)
+  })) : [];
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
+  XLSX.writeFile(wb, nombreArchivo);
+}
 

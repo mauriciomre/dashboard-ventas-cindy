@@ -4,3 +4,8 @@ DirectoryIndex index.php
 <Files "dashboard.html">
     Require all denied
 </Files>
+
+# Bloquear importar.html (reemplazado por importar.php con sesión)
+<Files "importar.html">
+    Require all denied
+</Files>

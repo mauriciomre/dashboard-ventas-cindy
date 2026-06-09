@@ -21,7 +21,7 @@
     <div class="banner-left">
       <div class="banner-title" id="banner-month-title">Cargando...</div>
       <div class="banner-badge" id="banner-badge">CINDY MAYORISTA</div>
-      <a href="admin/importar.html" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:white;text-decoration:none;white-space:nowrap">📥 Importar datos</a>
+      <a href="admin/importar.php" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:white;text-decoration:none;white-space:nowrap">📥 Importar datos</a>
       <a href="index.php?logout=1" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.7);text-decoration:none;white-space:nowrap">Salir</a>
     </div>
     <div class="banner-controls">
@@ -287,6 +287,7 @@
           <option value="9">Septiembre</option><option value="10">Octubre</option>
           <option value="11">Noviembre</option><option value="12">Diciembre</option>
         </select>
+        <button onclick="exportarTablaExcel()" style="margin-left:auto;background:#10B981;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer">⬇ Exportar Excel</button>
       </div>
       <div class="tab-panel active" id="panel-tbl-local">
         <div class="scroll-table"><div id="tbl-local-content"></div></div>

@@ -32,7 +32,22 @@ CREATE TABLE IF NOT EXISTS detalle_ventas (
   rubro    VARCHAR(80)       NOT NULL,
   valor    DECIMAL(18,2)     NOT NULL DEFAULT 0,
   unidades INT               NOT NULL DEFAULT 0,
-  INDEX idx_anio_mes  (anio, mes),
-  INDEX idx_local     (local),
-  INDEX idx_rubro     (rubro)
+  INDEX idx_anio_mes       (anio, mes),
+  INDEX idx_anio_mes_local (anio, mes, local),
+  INDEX idx_local          (local),
+  INDEX idx_rubro          (rubro)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ------------------------------------------------------------
+-- Tabla: import_log
+-- Historial de importaciones desde el panel admin
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS import_log (
+  id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  fecha               DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  usuario             VARCHAR(50)   NOT NULL DEFAULT 'admin',
+  registros           INT           NOT NULL DEFAULT 0,
+  meses_actualizados  INT           NOT NULL DEFAULT 0,
+  meses_texto         VARCHAR(255)  NOT NULL DEFAULT '',
+  INDEX idx_fecha (fecha)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

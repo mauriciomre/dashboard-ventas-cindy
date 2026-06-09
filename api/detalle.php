@@ -2,7 +2,13 @@
 // Endpoint: detalle ERP por año/mes/local/rubro (reemplaza el array DET)
 // GET /api/detalle.php
 
+session_start();
+if (empty($_SESSION['logged_in'])) { http_response_code(401); echo json_encode(['ok'=>false,'error'=>'No autorizado']); exit; }
+
 require_once __DIR__ . '/config.php';
+
+header('Content-Type: application/json');
+header('Cache-Control: private, max-age=300'); // 5 min
 
 try {
     $pdo = getDB();
