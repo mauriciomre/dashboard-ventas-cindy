@@ -3,8 +3,8 @@
 -- Schema de base de datos
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS cindy_dashboard CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE cindy_dashboard;
+-- La BD ya existe en Donweb, no es necesario crearla.
+-- Asegurate de tener seleccionada td000310_dashb_1 en phpMyAdmin antes de importar.
 
 -- ------------------------------------------------------------
 -- Tabla: ventas_mensuales

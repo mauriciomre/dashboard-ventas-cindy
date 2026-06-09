@@ -1,11 +1,11 @@
-USE cindy_dashboard;
+USE td000310_dashb_1;
 
 -- Limpiar antes de importar
 TRUNCATE TABLE detalle_ventas;
 TRUNCATE TABLE ventas_mensuales;
 
 -- ventas_mensuales (117 registros)
-INSERT INTO ventas_mensuales (anio, mes, total, locales_json) VALUES
+INSERT IGNORE INTO ventas_mensuales (anio, mes, total, locales_json) VALUES
   (2016, 9, 2673068.0, '{"R. Indarte": 1016313.0, "S.M.Cba": 291898.0, "9deJulio": 432369.0, "Peatonal": 576344.0, "EntreRios": 356144.0}'),
   (2016, 10, 3539255.0, '{"R. Indarte": 1060506.0, "S.M.Cba": 298524.0, "9deJulio": 788056.0, "Peatonal": 852203.0, "EntreRios": 539966.0}'),
   (2016, 11, 3060029.0, '{"R. Indarte": 1075039.0, "S.M.Cba": 280970.0, "9deJulio": 707552.0, "Peatonal": 638387.0, "EntreRios": 358081.0}'),
@@ -125,7 +125,7 @@ INSERT INTO ventas_mensuales (anio, mes, total, locales_json) VALUES
   (2026, 5, 458776920.0, '{"R. Indarte": 128700146.0, "Peatonal": 31133959.0, "Deposito": 291776632.0, "TravelBlue": 7166183.0}');
 
 -- detalle_ventas (3716 registros)
-INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
+INSERT IGNORE INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2023, 1, 'Deposito', 'Mochilas', 8500.0, 1),
   (2023, 1, 'Deposito', 'Accesorios', 101697.2, 60),
   (2023, 1, 'Deposito', 'BEAUTY', 1424.05, 1),
@@ -626,7 +626,7 @@ INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2023, 4, 'Deposito', 'Deco', 1741166.62, 769),
   (2023, 4, 'Deposito', 'Equipajes', 997850.51, 82),
   (2023, 4, 'Deposito', 'Jugueteria', 756099.5, 381);
-INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
+INSERT IGNORE INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2023, 4, 'Deposito', 'Libreria', 341397.26, 1509),
   (2023, 4, 'Deposito', 'Mochilas', 634272.53, 105),
   (2023, 4, 'Deposito', 'Paraguas', 129805.35, 60),
@@ -1127,7 +1127,7 @@ INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2024, 7, 'Deposito', 'Textil', 3503529.72, 486),
   (2024, 7, 'R. Indarte', 'Ac. Pelo', 403597.08, 430),
   (2024, 7, 'R. Indarte', 'Accesorios', 5714843.8, 1171);
-INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
+INSERT IGNORE INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2024, 7, 'R. Indarte', 'BEAUTY', 582988.69, 160),
   (2024, 7, 'R. Indarte', 'Bebé', 266575.22, 20),
   (2024, 7, 'R. Indarte', 'Billeteras', 5393796.07, 588),
@@ -1628,7 +1628,7 @@ INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2024, 12, 'Peatonal', 'Bebé', 52000.0, 1),
   (2024, 12, 'Peatonal', 'Billeteras', 2838110.75, 275),
   (2024, 12, 'Peatonal', 'Carteras', 17047663.05, 541);
-INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
+INSERT IGNORE INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2024, 12, 'Peatonal', 'Cartucheras y Luncheras', 1739959.0, 74),
   (2024, 12, 'Peatonal', 'Deco', 1970581.0, 89),
   (2024, 12, 'Peatonal', 'Equipajes', 18462747.7, 249),
@@ -2129,7 +2129,7 @@ INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2025, 4, 'R. Indarte', 'BIJOU/JOYERIA', 338486.79, 61),
   (2025, 4, 'R. Indarte', 'Bebé', 133342.0, 3),
   (2025, 4, 'R. Indarte', 'Billeteras', 6895216.58, 681);
-INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
+INSERT IGNORE INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2025, 4, 'R. Indarte', 'Carpetas', 153200.64, 76),
   (2025, 4, 'R. Indarte', 'Carteras', 15288378.36, 748),
   (2025, 4, 'R. Indarte', 'Cartucheras y Luncheras', 328158.96, 31),
@@ -2630,7 +2630,7 @@ INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2025, 8, 'Deposito', 'BEAUTY', 5746659.56, 2386),
   (2025, 8, 'Deposito', 'BIJOU/JOYERIA', 837303.02, 668),
   (2025, 8, 'Deposito', 'Bebé', 225643.2, 15);
-INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
+INSERT IGNORE INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2025, 8, 'Deposito', 'Billeteras', 3653318.17, 462),
   (2025, 8, 'Deposito', 'Carpetas', 117115.31, 32),
   (2025, 8, 'Deposito', 'Carteras', 21912810.36, 1435),
@@ -3131,7 +3131,7 @@ INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2025, 12, 'R. Indarte', 'BEAUTY', 1994171.92, 788),
   (2025, 12, 'R. Indarte', 'BIJOU/JOYERIA', 3234339.91, 880),
   (2025, 12, 'R. Indarte', 'Bebé', 188719.19, 8);
-INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
+INSERT IGNORE INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2025, 12, 'R. Indarte', 'Billeteras', 3354114.11, 412),
   (2025, 12, 'R. Indarte', 'Carpetas', 387707.72, 92),
   (2025, 12, 'R. Indarte', 'Carteras', 13664893.35, 792),
@@ -3632,7 +3632,7 @@ INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2026, 4, 'Deposito', 'TEXTILES DE HOGAR', 194230.58, 10),
   (2026, 4, 'Deposito', 'Textil', 51191392.27, 6732),
   (2026, 4, 'Peatonal', 'Accesorios', 73080.44, 11);
-INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
+INSERT IGNORE INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2026, 4, 'Peatonal', 'Billeteras', 89971.0, 8),
   (2026, 4, 'Peatonal', 'Carteras', 425972.03, 15),
   (2026, 4, 'Peatonal', 'Deco', 50997.0, 4),
@@ -3848,4 +3848,4 @@ INSERT INTO detalle_ventas (anio, mes, local, rubro, valor, unidades) VALUES
   (2026, 6, 'R. Indarte', 'Libreria', 162861.42, 21),
   (2026, 6, 'R. Indarte', 'Mochilas', 209638.65, 15),
   (2026, 6, 'R. Indarte', 'Paraguas', 31498.01, 3),
-  (2026, 6, 'R. Indarte', 'Textil', 638942.16, 118);
+  (2026, 6, 'R. Indarte', 'Textil', 638942.16, 118)
