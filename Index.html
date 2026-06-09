@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Ventas — Cindy Mayorista</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="loading">
+  <div class="loader"></div>
+  <div class="load-text">Cargando dashboard...</div>
+</div>
+
+<!-- BANNER: sticky top -->
+<div id="banner">
+  <div class="banner-header">
+    <div class="banner-left">
+      <div class="banner-title" id="banner-month-title">Cargando...</div>
+      <div class="banner-badge" id="banner-badge">CINDY MAYORISTA</div>
+    </div>
+    <div class="banner-controls">
+      <label>Período:</label>
+      <select id="ctrl-desde"></select>
+      <span style="color:rgba(255,255,255,0.5);font-size:11px">—</span>
+      <select id="ctrl-hasta"></select>
+      <div class="ctrl-sep"></div>
+      <div class="vista-group">
+        <button class="vista-btn active" data-vista="mensual" onclick="setVista(this)">Mensual</button>
+        <button class="vista-btn" data-vista="anual" onclick="setVista(this)">Anual</button>
+      </div>
+      <div class="ctrl-sep"></div>
+      <label>vs:</label>
+      <select id="ctrl-comparar"></select>
+      <div class="ctrl-sep"></div>
+      <button class="btn-apply" onclick="applyFilters()">Aplicar</button>
+      <span style="font-size:10px;opacity:0.5;white-space:nowrap">Datos: <span id="data-date">—</span></span>
+    </div>
+  </div>
+  <div class="banner-metrics" id="banner-metrics">
+    <div class="bm-card">
+      <div class="bm-label">Ventas con IVA (ARS $)</div>
+      <div class="bm-value" id="bm-ventas">—</div>
+      <div class="bm-delta neu" id="bm-ventas-sub">cargando</div>
+    </div>
+    <div class="bm-card">
+      <div class="bm-label">vs Mismo Mes Año Ant $</div>
+      <div class="bm-value" id="bm-yoy-v">—</div>
+      <div class="bm-delta neu" id="bm-yoy-v-pct">—</div>
+    </div>
+    <div class="bm-card">
+      <div class="bm-label">vs Mes Anterior $</div>
+      <div class="bm-value" id="bm-mom-v">—</div>
+      <div class="bm-delta neu" id="bm-mom-v-pct">—</div>
+    </div>
+    <div class="bm-card">
+      <div class="bm-label">Unidades Totales</div>
+      <div class="bm-value" id="bm-uds">—</div>
+      <div class="bm-delta neu" id="bm-uds-sub">ERP</div>
+    </div>
+    <div class="bm-card">
+      <div class="bm-label">vs Mismo Mes Año Ant. (Unidades)</div>
+      <div class="bm-value" id="bm-yoy-u">—</div>
+      <div class="bm-delta neu" id="bm-yoy-u-pct">—</div>
+    </div>
+    <div class="bm-card">
+      <div class="bm-label">vs Mes Anterior (Unidades)</div>
+      <div class="bm-value" id="bm-mom-u">—</div>
+      <div class="bm-delta neu" id="bm-mom-u-pct">—</div>
+    </div>
+  </div>
+  <div class="section-toggles">
+    <span style="font-size:10px;opacity:0.5;margin-right:4px;align-self:center">Secciones:</span>
+    <span class="sec-chip active" onclick="toggleSec('sec-kpis',this)">KPIs</span>
+    <span class="sec-chip active" onclick="toggleSec('sec-evo',this)">Evolución</span>
+    <span class="sec-chip active" onclick="toggleSec('sec-canal',this)">Canal y Rubro</span>
+    <span class="sec-chip active" onclick="toggleSec('sec-uds',this)">Unidades</span>
+    <span class="sec-chip active" onclick="toggleSec('sec-erp',this)">ERP</span>
+    <span class="sec-chip active" onclick="toggleSec('sec-tabla',this)">Tablas</span>
+    <span class="sec-chip active" onclick="toggleSec('sec-proj',this)">Proyección</span>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="main">
+
+  <!-- SECCION 2: KPIs -->
+  <div class="section" id="sec-kpis">
+    <div class="section-title"><div class="dot"></div>Indicadores Clave del Periodo</div>
+    <div class="cards-grid cols-5" id="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+      <div class="kpi-card kpi-accent">
+        <div class="kpi-label">Ventas Ultimo Mes</div>
+        <div class="kpi-value" id="kpi-ultmes">—</div>
+        <div class="kpi-delta neu" id="kpi-ultmes-d">—</div>
+        <div class="kpi-sub" id="kpi-ultmes-sub">con IVA</div>
+      </div>
+      <div class="kpi-card kpi-accent2">
+        <div class="kpi-label">Variacion YoY</div>
+        <div class="kpi-value" id="kpi-yoy">—</div>
+        <div class="kpi-delta neu" id="kpi-yoy-d">—</div>
+        <div class="kpi-sub" id="kpi-yoy-sub">vs mismo mes año anterior</div>
+      </div>
+      <div class="kpi-card" style="border-top:3px solid #f59e0b">
+        <div class="kpi-label">Mes en Curso</div>
+        <div class="kpi-value" id="kpi-curso-v" style="font-size:16px">—</div>
+        <div class="kpi-delta neu" id="kpi-curso-u" style="font-size:11px;margin-top:2px">— Unid.</div>
+        <div class="kpi-sub" id="kpi-curso-sub">facturado acumulado</div>
+      </div>
+      <div class="kpi-card kpi-accent3">
+        <div class="kpi-label">Acumulado Año Actual</div>
+        <div class="kpi-value" id="kpi-acum">—</div>
+        <div class="kpi-delta neu" id="kpi-acum-d">—</div>
+        <div class="kpi-sub" id="kpi-acum-sub">vs mismo periodo año anterior</div>
+      </div>
+      <div class="kpi-card" style="border-top:3px solid var(--primary-light)">
+        <div class="kpi-label">Canal Lider del Periodo</div>
+        <div class="kpi-value" id="kpi-canal" style="font-size:18px">—</div>
+        <div class="kpi-delta neu" id="kpi-canal-d">—</div>
+        <div class="kpi-sub" id="kpi-canal-sub">mayor volumen de ventas</div>
+      </div>
+      <div class="kpi-card" style="border-top:3px solid var(--danger)">
+        <div class="kpi-label">Proyeccion Anual BCRA REM</div>
+        <div class="kpi-value" id="kpi-proj">—</div>
+        <div class="kpi-delta neu" id="kpi-proj-d">—</div>
+        <div class="kpi-sub">Mayo 2026 — Abril 2027</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCION 3: EVOLUCION VENTAS -->
+  <div class="section" id="sec-evo">
+    <div class="section-title"><div class="dot" style="background:var(--secondary)"></div>Evolucion de Ventas</div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title" id="evo-title">Ventas Mensuales (con IVA)</div>
+        <div class="ctrl-group" style="gap:8px">
+          <select id="evo-tipo" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px">
+            <option value="line">Linea</option>
+            <option value="bar">Barras</option>
+          </select>
+          <select id="evo-comparar" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px">
+            <option value="">Sin comparar</option>
+          </select>
+          <button class="btn-apply" style="font-size:11px;padding:4px 10px" onclick="renderEvoChart()">Actualizar</button>
+        </div>
+      </div>
+      <div class="chart-wrap h360"><canvas id="chart-evo"></canvas></div>
+    </div>
+    <div class="chart-card" style="margin-top:12px">
+      <div class="chart-header" style="margin-bottom:10px">
+        <div class="chart-title">Tabla Mensual Detallada</div>
+        <div class="ctrl-group" style="gap:8px">
+          <label style="font-size:12px;color:var(--text-muted);font-weight:600">Comparar vs:</label>
+          <select id="tbl-evo-comp" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px" onchange="renderEvoTable()">
+            <option value="">Sin comparar</option>
+          </select>
+          <label style="font-size:12px;color:var(--text-muted);font-weight:600">Artículos:</label>
+          <select id="tbl-evo-articulos" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px" onchange="renderEvoTable()">
+            <option value="todos">Todos los rubros</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto"><div id="evo-table-container"></div></div>
+    </div>
+  </div>
+
+  <!-- SECCION 4: VENTAS POR LOCAL + RUBROS -->
+  <div class="section" id="sec-canal">
+    <div class="section-title"><div class="dot" style="background:var(--accent)"></div>Ventas por Canal y Rubro</div>
+    <div class="cards-grid cols-2">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Ventas por Local</div>
+          <select id="local-year" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px" onchange="renderLocalChart()"></select>
+        </div>
+        <div class="chart-wrap h320"><canvas id="chart-local"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Unidades por Rubro</div>
+          <select id="rubro-year" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px" onchange="renderRubroChart()"></select>
+        </div>
+        <div class="chart-wrap h320"><canvas id="chart-rubro"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCION 5: ANALISIS COMPARATIVO UNIDADES -->
+  <div class="section" id="sec-uds">
+    <div class="section-title"><div class="dot" style="background:var(--primary-light)"></div>Analisis Comparativo de Unidades</div>
+    <div class="chart-card">
+      <div class="tabs" id="tabs-uds">
+        <div class="tab active" onclick="switchTab('uds','ranking',this)">Ranking</div>
+        <div class="tab" onclick="switchTab('uds','yoy',this)">YoY</div>
+        <div class="tab" onclick="switchTab('uds','evolucion',this)">Evolucion</div>
+        <div class="tab" onclick="switchTab('uds','torta',this)">Distribucion</div>
+      </div>
+      <div class="filter-row">
+        <label>Año A:</label>
+        <select id="uds-año-a" onchange="renderUdsCharts()"></select>
+        <label>vs Año B:</label>
+        <select id="uds-año-b" onchange="renderUdsCharts()"></select>
+        <label>Filtro:</label>
+        <select id="uds-local-f" onchange="renderUdsCharts()"><option value="">Todos los locales</option></select>
+      </div>
+      <div class="tab-panel active" id="panel-uds-ranking">
+        <div class="chart-wrap h320"><canvas id="chart-uds-ranking"></canvas></div>
+      </div>
+      <div class="tab-panel" id="panel-uds-yoy">
+        <div class="chart-wrap h320"><canvas id="chart-uds-yoy"></canvas></div>
+      </div>
+      <div class="tab-panel" id="panel-uds-evolucion">
+        <div class="chart-wrap h320"><canvas id="chart-uds-evo"></canvas></div>
+      </div>
+      <div class="tab-panel" id="panel-uds-torta">
+        <div class="chart-wrap h320"><canvas id="chart-uds-torta"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCION 6: DETALLE ERP -->
+  <div class="section" id="sec-erp">
+    <div class="section-title"><div class="dot" style="background:var(--danger)"></div>Detalle ERP por Local y Rubro</div>
+    <div class="chart-card">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('erp','heatmap',this)">Heatmap</div>
+        <div class="tab" onclick="switchTab('erp','pormes',this)">Por Mes</div>
+        <div class="tab" onclick="switchTab('erp','ranking',this)">Ranking</div>
+        <div class="tab" onclick="switchTab('erp','comparativa',this)">Comparativa</div>
+        <div class="tab" onclick="switchTab('erp','incidencia',this)">Incidencia x Mes</div>
+      </div>
+      <div class="filter-row">
+        <label>Año:</label>
+        <select id="erp-año" onchange="renderErpCharts()"></select>
+        <label>Local:</label>
+        <select id="erp-local" onchange="renderErpCharts()"><option value="">Todos</option></select>
+        <label>Rubro:</label>
+        <select id="erp-rubro" onchange="renderErpCharts()"><option value="">Todos</option></select>
+        <label>Metrica:</label>
+        <select id="erp-metrica" onchange="renderErpCharts()">
+          <option value="v">Ventas $</option>
+          <option value="u">Unidades</option>
+        </select>
+      </div>
+      <div class="tab-panel active" id="panel-erp-heatmap">
+        <div style="overflow-x:auto"><div id="heatmap-container"></div></div>
+      </div>
+      <div class="tab-panel" id="panel-erp-pormes">
+        <div style="overflow-x:auto"><div id="pivot-container"></div></div>
+      </div>
+      <div class="tab-panel" id="panel-erp-ranking">
+        <div class="chart-wrap h360"><canvas id="chart-erp-ranking"></canvas></div>
+      </div>
+      <div class="tab-panel" id="panel-erp-comparativa">
+        <div style="overflow-x:auto"><div id="comparativa-container"></div></div>
+      </div>
+      <div class="tab-panel" id="panel-erp-incidencia">
+        <div style="overflow-x:auto"><div id="incidencia-container"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCION 7: TABLA DETALLADA -->
+  <div class="section" id="sec-tabla">
+    <div class="section-title"><div class="dot" style="background:var(--text-muted)"></div>Tabla Detallada</div>
+    <div class="chart-card">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('tbl','local',this)">Por Local</div>
+        <div class="tab" onclick="switchTab('tbl','rubro',this)">Por Rubro</div>
+        <div class="tab" onclick="switchTab('tbl','yoy',this)">YoY Comparacion</div>
+      </div>
+      <div class="filter-row">
+        <label>Año:</label>
+        <select id="tbl-año" onchange="renderTables()"></select>
+        <label>Mes:</label>
+        <select id="tbl-mes" onchange="renderTables()">
+          <option value="">Todo el año</option>
+          <option value="1">Enero</option><option value="2">Febrero</option>
+          <option value="3">Marzo</option><option value="4">Abril</option>
+          <option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option>
+          <option value="9">Septiembre</option><option value="10">Octubre</option>
+          <option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+      </div>
+      <div class="tab-panel active" id="panel-tbl-local">
+        <div class="scroll-table"><div id="tbl-local-content"></div></div>
+      </div>
+      <div class="tab-panel" id="panel-tbl-rubro">
+        <div class="scroll-table"><div id="tbl-rubro-content"></div></div>
+      </div>
+      <div class="tab-panel" id="panel-tbl-yoy">
+        <div class="scroll-table"><div id="tbl-yoy-content"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCION 8: PROYECCION 12 MESES -->
+  <div class="section" id="sec-proj">
+    <div class="section-title"><div class="dot" style="background:var(--accent)"></div>Proyeccion 12 Meses — BCRA REM</div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-header">
+        <div class="chart-title">Proyeccion de Ventas Nominales (Mayo 2026 — Abril 2027)</div>
+      </div>
+      <div class="chart-wrap h320"><canvas id="chart-proj-ventas"></canvas></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-header">
+        <div class="chart-title">Proyeccion de Unidades (estimacion por estacionalidad)</div>
+      </div>
+      <div class="chart-wrap h280"><canvas id="chart-proj-uds"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Tabla de Proyeccion Mensual</div>
+      </div>
+      <div class="data-table-wrap">
+        <div id="proj-table-container"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

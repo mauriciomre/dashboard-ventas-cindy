@@ -1,0 +1,5 @@
+api/config.php
+*.xlsx
+*.xls
+.DS_Store
+Thumbs.db
