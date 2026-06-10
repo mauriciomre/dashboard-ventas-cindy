@@ -40,15 +40,21 @@ define('ERP_PAGE_SIZE', 1000);
 // Los anulados se ignoran.
 define('CONCEPTOS_VALIDOS', [7, 9, 11]);
 
-// Mapeo Vendedor ERP → nombre local en el dashboard.
-// Ajustar según los locales reales que aparezcan en el ERP.
-// Si un Vendedor no está en el mapa, se usa el nombre original del ERP.
+// Mapeo Punto de Venta → nombre local en el dashboard.
+// El PV se extrae del campo NumeroComprobante (ej: "B:0105-00007651" → PV "105").
+// Misma tabla que usa admin/importar.php con el Excel.
+// Si un PV no está en el mapa, se usa "PV-XXXX" como nombre genérico.
 define('LOCAL_MAP', [
-    'Peatonal VM'        => 'Peatonal',
-    'Rivera Indarte Cba' => 'R. Indarte',
-    'Casa Central VM'    => 'Casa Central',
-    // Agregar más si aparecen nuevos locales al sincronizar:
-    // 'Nombre en ERP' => 'Nombre en Dashboard',
+    '105'  => 'Peatonal',
+    '5555' => 'Peatonal',
+    '107'  => 'Deposito',
+    '113'  => 'Deposito',
+    '3333' => 'Deposito',
+    '109'  => 'R. Indarte',
+    '9999' => 'R. Indarte',
+    '200'  => 'Travel Blue',
+    // Agregar nuevos puntos de venta si aparecen en el ERP:
+    // 'XXX' => 'Nombre Local',
 ]);
 
 // ─── Parseo de parámetros ─────────────────────────────────────────────────────
@@ -229,8 +235,9 @@ function fetchComprobantes(
 
 // ─── Agregación de comprobantes por mes+local ─────────────────────────────────
 function agregarPorMesLocal(array $comprobantes, callable $logFn): array {
-    $mapa     = [];  // "YYYY-M" => ["local" => total]
-    $omitidos = 0;
+    $mapa        = [];  // "YYYY-M" => ["local" => total]
+    $omitidos    = 0;
+    $pvEncontrados = []; // pv => local (para reporte)
 
     foreach ($comprobantes as $c) {
         // Filtrar anulados
@@ -247,9 +254,19 @@ function agregarPorMesLocal(array $comprobantes, callable $logFn): array {
         $mes  = (int)$m[2];
         $key  = "{$anio}-{$mes}";
 
-        // Local (Vendedor → mapeado)
-        $vendedor = trim($c['Vendedor'] ?? 'Sin asignar');
-        $local    = LOCAL_MAP[$vendedor] ?? $vendedor;
+        // Local: extraer PV de NumeroComprobante (ej: "B:0105-00007651" → "105")
+        // y mapear al nombre de local correspondiente.
+        $nroComp = $c['NumeroComprobante'] ?? '';
+        $pv      = '';
+        if (preg_match('/^[A-Z]:\s*0*(\d+)-/', $nroComp, $m)) {
+            $pv = $m[1]; // número sin ceros a la izquierda
+        }
+        $local = LOCAL_MAP[$pv] ?? ($pv !== '' ? "PV-{$pv}" : 'Sin asignar');
+
+        // Registrar PV para reporte (solo una vez por PV)
+        if ($pv !== '' && !isset($pvEncontrados[$pv])) {
+            $pvEncontrados[$pv] = $local;
+        }
 
         // Total (ya firmado: NC negativo)
         $total = (float)($c['Total'] ?? 0);
@@ -260,6 +277,23 @@ function agregarPorMesLocal(array $comprobantes, callable $logFn): array {
     }
 
     if ($omitidos > 0) $logFn("Omitidos (anulados): {$omitidos}");
+
+    // Reporte de PVs: mapeados vs sin mapear
+    ksort($pvEncontrados);
+    $sinMapear = [];
+    foreach ($pvEncontrados as $pv => $local) {
+        if (strpos($local, 'PV-') === 0) {
+            $sinMapear[] = $pv;
+        }
+    }
+    $logFn("PVs encontrados: " . implode(', ', array_map(
+        fn($pv, $loc) => "PV{$pv}→{$loc}", array_keys($pvEncontrados), $pvEncontrados
+    )));
+    if ($sinMapear) {
+        $logFn("⚠ SIN MAPEAR: PV " . implode(', PV ', $sinMapear));
+    } else {
+        $logFn("Todos los PVs tienen local asignado.");
+    }
 
     return $mapa;
 }
