@@ -206,18 +206,13 @@ function fetchComprobantes(
             throw new RuntimeException('Error ERP en página ' . ($start / ERP_PAGE_SIZE + 1) . ': ' . json_encode($resp));
         }
 
-        // El endpoint puede devolver los datos directamente en $resp o dentro de $resp['Data']
-        $data = isset($resp['Data']) && is_array($resp['Data']) ? $resp['Data'] : $resp;
+        // Estructura real: $resp['Data']['DT'] contiene recordsTotal y data
+        $data = $resp['Data']['DT'] ?? $resp['Data'] ?? $resp;
 
         if ($total === null) {
             $total = (int)($data['recordsTotal'] ?? 0);
             $logFn("Total comprobantes en ERP: {$total}");
-            // Debug: si no hay registros, loguear el response completo para diagnóstico
-            if ($total === 0) {
-                $logFn("DEBUG response keys: " . implode(', ', array_keys($resp)));
-                $logFn("DEBUG data keys: " . implode(', ', is_array($data) ? array_keys($data) : ['(no es array)']));
-                $logFn("DEBUG response snippet: " . substr(json_encode($resp), 0, 500));
-            }
+
         }
 
         $registros = $data['data'] ?? [];
