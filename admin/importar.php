@@ -58,6 +58,23 @@ if (empty($_SESSION['logged_in'])) {
   .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px;
     font-weight: 600; background: #DBEAFE; color: #1D4ED8; }
   .empty-log { color: #94A3B8; font-size: 13px; text-align: center; padding: 20px; }
+  /* Loader ERP */
+  .erp-loader { display:none; margin-top:18px; }
+  .erp-loader.visible { display:block; }
+  .loader-bar-wrap { height:6px; background:#E2E8F0; border-radius:3px; overflow:hidden; margin-bottom:10px; }
+  .loader-bar { height:100%; width:30%; background:#6366F1; border-radius:3px;
+    animation: barSlide 1.4s ease-in-out infinite; }
+  @keyframes barSlide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .loader-text { font-size:13px; color:#6366F1; display:flex; align-items:center; gap:8px; }
+  .loader-text span { animation: dotPulse 1.4s steps(4, end) infinite; }
+  @keyframes dotPulse {
+    0%,100% { content:''; } 25% { content:'.'; } 50% { content:'..'; } 75% { content:'...'; }
+  }
+  .loader-dots::after { content:''; animation: dots 1.4s steps(4,end) infinite; }
+  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} 100%{content:''} }
 </style>
 </head>
 <body>
@@ -121,6 +138,17 @@ if (empty($_SESSION['logged_in'])) {
         style="flex:0 0 auto;width:auto;padding:12px 18px;background:#F1F5F9;color:#334155;font-weight:600;border:1px solid #E2E8F0">
         Prueba (sin guardar)
       </button>
+    </div>
+
+    <!-- Loader -->
+    <div class="erp-loader" id="erp-loader">
+      <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+      <div class="loader-text">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+        <span id="loader-msg">Conectando al ERP</span><span class="loader-dots"></span>
+      </div>
     </div>
 
     <div class="status" id="erp-status"></div>
@@ -347,12 +375,27 @@ async function sincronizarERP(dryRun = false) {
 
   btnSync.disabled = true;
   btnDry.disabled  = true;
-  status.className = 'status info';
-  status.textContent = dryRun
-    ? `Probando conexión (${rango.desde} → ${rango.hasta})…`
-    : `Sincronizando ${rango.desde} → ${rango.hasta}…`;
+  status.className = 'status';
+  status.style.display = 'none';
   logDiv.style.display = 'none';
   logDiv.innerHTML = '';
+
+  // Mostrar loader con mensajes rotativos
+  const loader    = document.getElementById('erp-loader');
+  const loaderMsg = document.getElementById('loader-msg');
+  loader.classList.add('visible');
+  const mensajes = [
+    'Conectando al ERP',
+    'Descargando comprobantes',
+    'Procesando páginas',
+    'Casi listo',
+  ];
+  let msgIdx = 0;
+  loaderMsg.textContent = mensajes[0];
+  const loaderTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % mensajes.length;
+    loaderMsg.textContent = mensajes[msgIdx];
+  }, 3500);
 
   try {
     const params = new URLSearchParams({
@@ -364,6 +407,9 @@ async function sincronizarERP(dryRun = false) {
 
     const res = await fetch(`../api/erp_sync.php?${params}`);
     const data = await res.json();
+
+    clearInterval(loaderTimer);
+    loader.classList.remove('visible');
 
     // Mostrar log
     if (data.log && data.log.length) {
@@ -381,6 +427,8 @@ async function sincronizarERP(dryRun = false) {
       status.textContent = 'Error: ' + (data.error || data.message || 'desconocido');
     }
   } catch(e) {
+    clearInterval(loaderTimer);
+    loader.classList.remove('visible');
     status.className = 'status err';
     status.textContent = 'Error de red: ' + e.message;
   }
