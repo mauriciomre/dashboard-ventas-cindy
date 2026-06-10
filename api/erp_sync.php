@@ -53,8 +53,9 @@ define('LOCAL_MAP', [
     '109'  => 'R. Indarte',
     '9999' => 'R. Indarte',
     '200'  => 'Travel Blue',
-    // Agregar nuevos puntos de venta si aparecen en el ERP:
-    // 'XXX' => 'Nombre Local',
+    '103'  => 'Deposito',
+    '121'  => 'Deposito',
+    '2222' => 'Travel Blue',
 ]);
 
 // ─── Parseo de parámetros ─────────────────────────────────────────────────────
